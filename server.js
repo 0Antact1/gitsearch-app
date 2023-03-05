@@ -58,7 +58,8 @@ app.get('/api/github', async (req, res) => {
       let allForkers = [];
       // api rate lim exceeded :( on multiple nets
       while (true) {
-        const response = await axios.get(repo.forks_url, {
+        const forksUrl = repo.forks_url;
+        const response = await axios.get(`${forksUrl}?page=${page}&per_page=100`, {
           headers: { 'User-Agent': 'request' },
         });
     
@@ -83,7 +84,7 @@ app.get('/api/github', async (req, res) => {
 
       result.push({
         name: repo.name,
-        forkers: forkers.slice(0, m)
+        forkers: allForkers.slice(0, m)
       });
     }
 
