@@ -16,20 +16,70 @@ app.get('/api/github', async (req, res) => {
     const { orgName, n, m } = req.query;
     console.log(orgName)
     console.log(n,m)
-    // Fetch repositories of the given organization
-    const reposResponse = await axios.get(`https://api.github.com/orgs/${orgName}/repos`);
-    const repos = reposResponse.data;
-
-    repos.sort((a, b) => b.forks - a.forks);
+    
+    let page = 1;
+    let allRepos = [];
+  
+    while (true) {
+      const response = await axios.get(`https://api.github.com/orgs/${orgName}/repos?page=${page}&per_page=100`, {
+        headers: { 'User-Agent': 'request' },
+      });
+  
+      const repos = response.data;
+      allRepos = [...allRepos, ...repos];
+  
+      const linkHeader = response.headers.link || '';
+      const nextPageUrl = linkHeader
+        .split(',')
+        .find((link) => link.includes('rel="next"'))
+        ?.match(/<(.+?)>/)?.[1];
+  
+      if (!nextPageUrl) {
+        break;
+      }
+  
+      page++;
+    }
+  
+    allRepos.sort((a, b) => b.forks_count - a.forks_count)
+    // const reposResponse = await axios.get(`https://api.github.com/orgs/${orgName}/repos`);
+    // const repos = reposResponse.data;
+    // repos.sort((a, b) => b.forks - a.forks);
     const result = [];
 
-    for (let i = 0; i < n && i < repos.length; i++) {
-      const repo = repos[i];
-      const forkersResponse = await axios.get(repo.forks_url);
-      const forkers = forkersResponse.data.map(fork => ({
-        login: fork.owner.login,
-        date: fork.created_at
-      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+    for (let i = 0; i < n && i < allRepos.length; i++) {
+      const repo = allRepos[i];
+      // const forkersResponse = await axios.get(repo.forks_url);
+      // const forkers = forkersResponse.data.map(fork => ({
+      //   login: fork.owner.login,
+      //   date: fork.created_at
+      // })).sort((a, b) => new Date(a.date) - new Date(b.date));
+      let page = 1;
+      let allForkers = [];
+      // api rate lim exceeded :( on multiple nets
+      while (true) {
+        const response = await axios.get(repo.forks_url, {
+          headers: { 'User-Agent': 'request' },
+        });
+    
+        const forkers = response.data.map(fork => ({
+            login: fork.owner.login,
+            date: fork.created_at
+          }));
+        allForkers = [...allForkers, ...forkers];
+    
+        const linkHeader = response.headers.link || '';
+        const nextPageUrl = linkHeader
+          .split(',')
+          .find((link) => link.includes('rel="next"'))
+          ?.match(/<(.+?)>/)?.[1];
+    
+        if (!nextPageUrl) {
+          break;
+        }
+        page++;
+      }
+      allForkers.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       result.push({
         name: repo.name,
