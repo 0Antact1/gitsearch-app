@@ -7,9 +7,6 @@ const app = express();
 app.use(cors())
 app.use(express.json());
 
-app.post('/api/github', (req, res) => {
-  res.send('Hello, this is the GitHub API endpoint.');
-});
 
 app.get('/api/github', async (req, res) => {
   try {
