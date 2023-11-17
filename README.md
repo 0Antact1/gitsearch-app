@@ -1,2 +1,2 @@
 ﻿# gitsearch-app
- OCS application project
+ Web backend project
